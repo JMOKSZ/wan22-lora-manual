@@ -1,0 +1,525 @@
+<title>Wan2.2 人像 LoRA 训练手册</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@600;700;900&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+:root{
+  --bg:#FBFAF5;
+  --surface:#FFFFFF;
+  --ink:#26231C;
+  --ink-soft:#6B6558;
+  --line:#E3DFD2;
+  --accent:#B53A2A;
+  --accent-soft:#F6E8E4;
+  --good:#2E6B4F;
+  --good-soft:#E7F0EA;
+  --warn-ink:#8A5A18;
+  --warn-soft:#F8F0DC;
+  --code-bg:#F2F0E8;
+  --radius:10px;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#1B1915;
+    --surface:#242119;
+    --ink:#EDE7DA;
+    --ink-soft:#A79E8C;
+    --line:#3B362B;
+    --accent:#D9705C;
+    --accent-soft:#3A2620;
+    --good:#7FB894;
+    --good-soft:#222F27;
+    --warn-ink:#D9B36A;
+    --warn-soft:#332C1B;
+    --code-bg:#2C2921;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#1B1915;
+  --surface:#242119;
+  --ink:#EDE7DA;
+  --ink-soft:#A79E8C;
+  --line:#3B362B;
+  --accent:#D9705C;
+  --accent-soft:#3A2620;
+  --good:#7FB894;
+  --good-soft:#222F27;
+  --warn-ink:#D9B36A;
+  --warn-soft:#332C1B;
+  --code-bg:#2C2921;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+  background:var(--bg);
+  color:var(--ink);
+  font-family:"PingFang SC","Hiragino Sans GB","Microsoft YaHei",system-ui,sans-serif;
+  font-size:15.5px;
+  line-height:1.75;
+  margin:0;
+}
+::selection{background:var(--accent-soft)}
+
+/* ---------- top bar ---------- */
+.topbar{
+  position:sticky;top:0;z-index:50;
+  background:var(--bg);
+  border-bottom:1px solid var(--line);
+}
+.topbar-inner{
+  max-width:780px;margin:0 auto;padding:10px 20px;
+  display:flex;align-items:center;gap:14px;
+}
+.topbar-title{
+  font-family:"Noto Serif SC",serif;font-weight:700;font-size:14px;
+  white-space:nowrap;letter-spacing:.02em;
+}
+.progress-track{
+  flex:1;height:6px;background:var(--line);border-radius:99px;overflow:hidden;
+}
+.progress-fill{
+  height:100%;width:0%;background:var(--accent);border-radius:99px;
+  transition:width .35s ease;
+}
+.progress-num{
+  font-family:"IBM Plex Mono",monospace;font-size:12.5px;color:var(--ink-soft);
+  min-width:64px;text-align:right;font-variant-numeric:tabular-nums;
+}
+.reset-btn{
+  border:1px solid var(--line);background:none;color:var(--ink-soft);
+  font-size:12px;padding:4px 10px;border-radius:99px;cursor:pointer;
+  font-family:inherit;white-space:nowrap;
+}
+.reset-btn:hover{border-color:var(--accent);color:var(--accent)}
+
+/* ---------- layout ---------- */
+main{max-width:780px;margin:0 auto;padding:0 20px 96px}
+
+/* ---------- hero ---------- */
+.hero{padding:56px 0 36px;border-bottom:1px solid var(--line)}
+.hero-kicker{
+  font-family:"IBM Plex Mono",monospace;font-size:12px;letter-spacing:.14em;
+  color:var(--accent);text-transform:uppercase;margin-bottom:14px;
+}
+.hero h1{
+  font-family:"Noto Serif SC",serif;font-weight:900;
+  font-size:clamp(28px,5vw,38px);line-height:1.3;margin:0 0 18px;
+  text-wrap:balance;letter-spacing:.01em;
+}
+.hero p.lede{
+  font-size:16.5px;color:var(--ink-soft);max-width:34em;margin:0 0 26px;
+}
+.hero-facts{
+  display:flex;flex-wrap:wrap;gap:10px 28px;
+  font-size:13.5px;color:var(--ink-soft);
+}
+.hero-facts b{
+  display:block;font-family:"IBM Plex Mono",monospace;font-weight:500;
+  font-size:15px;color:var(--ink);font-variant-numeric:tabular-nums;
+}
+
+/* ---------- phase nav ---------- */
+.phasenav{
+  display:flex;gap:8px;flex-wrap:wrap;padding:18px 0 4px;
+}
+.phasenav a{
+  font-size:13px;color:var(--ink-soft);text-decoration:none;
+  border:1px solid var(--line);border-radius:99px;padding:5px 14px;
+  transition:all .15s;
+}
+.phasenav a:hover{border-color:var(--accent);color:var(--accent)}
+.phasenav a .n{font-family:"IBM Plex Mono",monospace;color:var(--accent);margin-right:5px}
+
+/* ---------- phases ---------- */
+.phase{margin-top:56px;scroll-margin-top:72px}
+.phase-head{
+  display:flex;align-items:baseline;gap:16px;
+  border-bottom:2px solid var(--ink);padding-bottom:10px;margin-bottom:8px;
+}
+.phase-num{
+  font-family:"IBM Plex Mono",monospace;font-size:13px;font-weight:500;
+  color:var(--bg);background:var(--accent);
+  padding:3px 10px;border-radius:6px;white-space:nowrap;
+  transform:translateY(-2px);
+}
+.phase-head h2{
+  font-family:"Noto Serif SC",serif;font-weight:700;font-size:23px;margin:0;
+  letter-spacing:.01em;
+}
+.phase-eta{margin-left:auto;font-size:12.5px;color:var(--ink-soft);white-space:nowrap}
+.phase-intro{color:var(--ink-soft);margin:12px 0 20px;max-width:36em}
+
+/* ---------- checklist ---------- */
+.checklist{display:flex;flex-direction:column;gap:2px;margin:0 0 8px}
+.check-item{
+  display:flex;gap:14px;align-items:flex-start;
+  padding:11px 14px;border-radius:var(--radius);cursor:pointer;
+  transition:background .15s;
+}
+.check-item:hover{background:var(--surface)}
+.check-item input{position:absolute;opacity:0;pointer-events:none}
+.check-box{
+  flex:none;width:20px;height:20px;margin-top:3px;
+  border:1.5px solid var(--ink-soft);border-radius:6px;
+  display:grid;place-items:center;transition:all .15s;
+}
+.check-box svg{width:12px;height:12px;stroke:var(--bg);stroke-width:3;fill:none;
+  stroke-dasharray:20;stroke-dashoffset:20;transition:stroke-dashoffset .25s ease .05s}
+.check-item input:checked ~ .check-box{
+  background:var(--good);border-color:var(--good);
+}
+.check-item input:checked ~ .check-box svg{stroke-dashoffset:0}
+.check-item input:focus-visible ~ .check-box{outline:2px solid var(--accent);outline-offset:2px}
+.check-body{flex:1;min-width:0}
+.check-title{font-weight:600;font-size:15px;transition:color .15s}
+.check-item input:checked ~ .check-body .check-title{color:var(--ink-soft);text-decoration:line-through;text-decoration-color:var(--line)}
+.check-desc{font-size:13.5px;color:var(--ink-soft);margin-top:2px}
+.check-tag{
+  flex:none;font-size:11px;font-family:"IBM Plex Mono",monospace;
+  padding:2px 8px;border-radius:5px;margin-top:4px;white-space:nowrap;
+}
+.tag-key{background:var(--accent-soft);color:var(--accent)}
+.tag-opt{background:var(--code-bg);color:var(--ink-soft)}
+
+/* ---------- blocks ---------- */
+.note{
+  border-left:3px solid var(--accent);background:var(--accent-soft);
+  padding:12px 18px;border-radius:0 var(--radius) var(--radius) 0;
+  font-size:14px;margin:18px 0;
+}
+.note.good{border-color:var(--good);background:var(--good-soft)}
+.note.warn{border-color:var(--warn-ink);background:var(--warn-soft);color:var(--ink)}
+.note b{color:inherit}
+.note.warn b{color:var(--warn-ink)}
+
+.tablewrap{overflow-x:auto;margin:18px 0;border:1px solid var(--line);border-radius:var(--radius)}
+table{border-collapse:collapse;width:100%;font-size:13.5px;background:var(--surface)}
+th{
+  text-align:left;font-family:"IBM Plex Mono",monospace;font-weight:500;font-size:12px;
+  color:var(--ink-soft);letter-spacing:.04em;
+  padding:10px 14px;border-bottom:1px solid var(--line);white-space:nowrap;
+}
+td{padding:10px 14px;border-bottom:1px solid var(--line);vertical-align:top}
+tr:last-child td{border-bottom:none}
+td code{font-size:12.5px}
+
+.codeblock{
+  position:relative;background:var(--code-bg);border-radius:var(--radius);
+  padding:14px 16px;margin:14px 0;
+  font-family:"IBM Plex Mono",monospace;font-size:12.8px;line-height:1.7;
+  overflow-x:auto;white-space:pre;
+}
+.copy-btn{
+  position:absolute;top:8px;right:8px;
+  border:1px solid var(--line);background:var(--surface);color:var(--ink-soft);
+  font-size:11.5px;padding:3px 10px;border-radius:6px;cursor:pointer;font-family:inherit;
+}
+.copy-btn:hover{border-color:var(--accent);color:var(--accent)}
+
+code{
+  font-family:"IBM Plex Mono",monospace;font-size:.88em;
+  background:var(--code-bg);padding:1.5px 6px;border-radius:5px;
+}
+
+.ratio-demo{
+  display:flex;gap:6px;margin:16px 0;height:64px;
+}
+.ratio-seg{
+  border-radius:8px;display:flex;flex-direction:column;justify-content:center;
+  padding:0 12px;font-size:12px;min-width:0;
+}
+.ratio-seg b{font-family:"IBM Plex Mono",monospace;font-size:14px;font-weight:500}
+.ratio-face{flex:35;background:var(--accent-soft);color:var(--accent)}
+.ratio-half{flex:45;background:var(--good-soft);color:var(--good)}
+.ratio-full{flex:20;background:var(--code-bg);color:var(--ink-soft)}
+
+/* ---------- decision table ---------- */
+.verdict-yes{color:var(--good);font-weight:600}
+.verdict-no{color:var(--accent);font-weight:600}
+
+/* ---------- footer ---------- */
+footer{
+  margin-top:72px;padding-top:24px;border-top:1px solid var(--line);
+  font-size:13px;color:var(--ink-soft);
+}
+footer a{color:var(--accent);text-decoration:none;border-bottom:1px solid var(--accent-soft)}
+footer a:hover{border-color:var(--accent)}
+.foot-links{display:flex;flex-wrap:wrap;gap:8px 22px;margin-top:8px}
+
+@media (max-width:600px){
+  .phase-eta{display:none}
+  .hero{padding:40px 0 28px}
+}
+@media (prefers-reduced-motion:reduce){
+  html{scroll-behavior:auto}
+  *{transition:none!important}
+}
+</style>
+
+<div class="topbar">
+  <div class="topbar-inner">
+    <span class="topbar-title">LoRA 训练手册</span>
+    <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+    <span class="progress-num" id="progressNum">0 / 0</span>
+    <button class="reset-btn" id="resetBtn" type="button">重置进度</button>
+  </div>
+</div>
+
+<main>
+
+<header class="hero">
+  <div class="hero-kicker">Wan 2.2 · Identity LoRA · Field Manual</div>
+  <h1>让生成的视频，一眼就是她</h1>
+  <p class="lede">用 30–50 张照片训练一个专属 LoRA，把样貌"刻"进模型。这份手册按操作顺序组织，做完一项勾一项，进度会存在你自己的浏览器里。</p>
+  <div class="hero-facts">
+    <span><b>30–50 张</b>照片需求</span>
+    <span><b>$3–8</b>单次云端训练成本</span>
+    <span><b>~1 小时</b>云端训练时长</span>
+    <span><b>0 改动</b>本地推理成本</span>
+  </div>
+</header>
+
+<nav class="phasenav">
+  <a href="#p1"><span class="n">01</span>照片集</a>
+  <a href="#p2"><span class="n">02</span>打标</a>
+  <a href="#p3"><span class="n">03</span>云端训练</a>
+  <a href="#p4"><span class="n">04</span>本地加载</a>
+  <a href="#p5"><span class="n">05</span>诊断迭代</a>
+</nav>
+
+<!-- ============ PHASE 1 ============ -->
+<section class="phase" id="p1">
+  <div class="phase-head">
+    <span class="phase-num">阶段 01</span>
+    <h2>准备照片集</h2>
+    <span class="phase-eta">预计 1–2 天</span>
+  </div>
+  <p class="phase-intro">LoRA 的上限在数据，不在参数。模型会原样学走照片集里的一切规律——包括美颜滤镜和总是同一个背景。原则只有一条：<b>30 张精选胜过 60 张重复</b>。</p>
+
+  <div class="checklist">
+    <label class="check-item"><input type="checkbox" data-k="p1-1"><span class="check-box"><svg viewBox="0 0 16 16"><path d="M2.5 8.5l3.5 3.5 7-8"/></svg></span><span class="check-body"><span class="check-title">收集 30–50 张手机原图</span><span class="check-desc">从相册直接导出原文件，不要微信/QQ 转发图——压缩会抹掉皮肤质感，模型学到的是压缩痕迹。</span></span><span class="check-tag tag-key">关键</span></label>
+
+    <label class="check-item"><input type="checkbox" data-k="p1-2"><span class="check-box"><svg viewBox="0 0 16 16"><path d="M2.5 8.5l3.5 3.5 7-8"/></svg></span><span class="check-body"><span class="check-title">确认每张只有她一个人</span><span class="check-desc">合照务必裁掉其他人。画面里出现第二张脸，模型会把两张脸"揉"在一起学。</span></span><span class="check-tag tag-key">关键</span></label>
+
+    <label class="check-item"><input type="checkbox" data-k="p1-3"><span class="check-box"><svg viewBox="0 0 16 16"><path d="M2.5 8.5l3.5 3.5 7-8"/></svg></span><span class="check-body"><span class="check-title">剔除美颜和重滤镜照片</span><span class="check-desc">磨皮、大眼、瘦脸参数会被一起学进去，生成视频时关不掉。轻微调色的可以保留。</span></span><span class="check-tag tag-key">关键</span></label>
+
+    <label class="check-item"><input type="checkbox" data-k="p1-4"><span class="check-box"><svg viewBox="0 0 16 16"><path d="M2.5 8.5l3.5 3.5 7-8"/></svg></span><span class="check-body"><span class="check-title">面部无遮挡</span><span class="check-desc">不戴墨镜、口罩；头发不遮眼睛；手不挡脸。少量遮挡照可以留，但占比别超过 1/10。</span></span></label>
+
+    <label class="check-item"><input type="checkbox" data-k="p1-5"><span class="check-box"><svg viewBox="0 0 16 16"><path d="M2.5 8.5l3.5 3.5 7-8"/></svg></span><span class="check-body"><span class="check-title">覆盖多角度与多表情</span><span class="check-desc">正脸、3/4 侧、正侧面都要有；微笑、自然、大笑、说话状态都要有——视频里脸会动，只喂正脸微笑，转头就崩。</span></span><span class="check-tag tag-key">关键</span></label>
+
+    <label class="check-item"><input type="checkbox" data-k="p1-6"><span class="check-box"><svg viewBox="0 0 16 16"><path d="M2.5 8.5l3.5 3.5 7-8"/></svg></span><span class="check-body"><span class="check-title">覆盖多光线、多场景、多服装</span><span class="check-desc">室内/室外、顺光/逆光、不同发型和衣服。如果照片全是一个背景，模型会把背景也当成"她"的一部分。</span></span></label>
+
+    <label class="check-item"><input type="checkbox" data-k="p1-7"><span class="check-box"><svg viewBox="0 0 16 16"><path d="M2.5 8.5l3.5 3.5 7-8"/></svg></span><span class="check-body"><span class="check-title">按配比挑片</span><span class="check-desc">面部特写 ≈35%，半身 ≈45%，全身 ≈20%。脸部是身份核心，但全身照保证体型和姿态也被学到。</span></span></label>
+
+    <div class="ratio-demo">
+      <div class="ratio-seg ratio-face"><b>35%</b>面部特写</div>
+      <div class="ratio-seg ratio-half"><b>45%</b>半身</div>
+      <div class="ratio-seg ratio-full"><b>20%</b>全身</div>
+    </div>
+
+    <label class="check-item"><input type="checkbox" data-k="p1-8"><span class="check-box"><svg viewBox="0 0 16 16"><path d="M2.5 8.5l3.5 3.5 7-8"/></svg></span><span class="check-body"><span class="check-title">统一裁切与去重</span><span class="check-desc">短边 ≥ 1024px；相近的连拍只留最好的一张；删掉模糊、过曝、严重欠曝的。按 1:1 / 3:4 / 4:3 归类放好。</span></span></label>
+
+    <label class="check-item"><input type="checkbox" data-k="p1-9"><span class="check-box"><svg viewBox="0 0 16 16"><path d="M2.5 8.5l3.5 3.5 7-8"/></svg></span><span class="check-body"><span class="check-title">打包成目录</span><span class="check-desc">建一个目录（如 <code>wife_lora_dataset/</code>），图片按 <code>001.jpg</code>、<code>002.jpg</code> … 顺序命名。</span></span></label>
+  </div>
+
+  <div class="note warn"><b>隐私提醒：</b>照片包含家人肖像。优先选允许私有化/不保留数据的训练服务；上传前看清楚平台的数据政策。本地素材目录不要同步到公开网盘。</div>
+</section>
+
+<!-- ============ PHASE 2 ============ -->
+<section class="phase" id="p2">
+  <div class="phase-head">
+    <span class="phase-num">阶段 02</span>
+    <h2>打标（Caption）</h2>
+    <span class="phase-eta">预计 半天</span>
+  </div>
+  <p class="phase-intro">每张照片配一个同名 <code>.txt</code>，里面是一句英文描述。打标的黄金法则：<b>描述一切"会变的"（服装、场景、动作、光线），不描述"属于她的"（五官、脸型）</b>——不被描述的特征才会被绑定到触发词上。</p>
+
+  <div class="checklist">
+    <label class="check-item"><input type="checkbox" data-k="p2-1"><span class="check-box"><svg viewBox="0 0 16 16"><path d="M2.5 8.5l3.5 3.5 7-8"/></svg></span><span class="check-body"><span class="check-title">选定触发词</span><span class="check-desc">用一个模型词表里几乎不存在的组合，比如 <code>taitai_jm</code>。之后训练和生成的每一条提示词都以它开头。</span></span><span class="check-tag tag-key">关键</span></label>
+
+    <label class="check-item"><input type="checkbox" data-k="p2-2"><span class="check-box"><svg viewBox="0 0 16 16"><path d="M2.5 8.5l3.5 3.5 7-8"/></svg></span><span class="check-body"><span class="check-title">批量自动打标</span><span class="check-desc">用 JoyCaption、Florence-2 或 Qwen-VL 跑一遍生成初稿；fal.ai / Replicate 的部分训练器自带自动打标，可以跳过这步再人工补。</span></span></label>
+
+    <label class="check-item"><input type="checkbox" data-k="p2-3"><span class="check-box"><svg viewBox="0 0 16 16"><path d="M2.5 8.5l3.5 3.5 7-8"/></svg></span><span class="check-body"><span class="check-title">逐条检查修正</span><span class="check-desc">每条 caption 以触发词开头，后面跟客观描述。重点抽查 10 条以上，删掉对长相的描述（如 "beautiful eyes"），只留可变元素。</span></span><span class="check-tag tag-key">关键</span></label>
+  </div>
+
+  <p style="font-size:14px;color:var(--ink-soft);margin:18px 0 6px">一条合格的 caption 长这样：</p>
+  <div class="codeblock" id="cap1">taitai_jm, a woman wearing a beige knit sweater, sitting by a café window, soft afternoon light, looking to the side, slight smile, medium shot<button class="copy-btn" data-copy="cap1">复制</button></div>
+  <p style="font-size:14px;color:var(--ink-soft);margin:6px 0 6px">反面教材（把身份特征写进了 caption，模型就学不会绑定）：</p>
+  <div class="codeblock" id="cap2">a woman with round face, double eyelids and a small nose, wearing a beige sweater…<button class="copy-btn" data-copy="cap2">复制</button></div>
+</section>
+
+<!-- ============ PHASE 3 ============ -->
+<section class="phase" id="p3">
+  <div class="phase-head">
+    <span class="phase-num">阶段 03</span>
+    <h2>云端训练</h2>
+    <span class="phase-eta">约 1 小时 + 等待</span>
+  </div>
+  <p class="phase-intro">本机 36GB 内存跑不动 Wan 2.2 的 14B 训练，这一步交给云端。三条路任选，<b>第一次建议走方案 A</b>，用最小成本验证效果。</p>
+
+  <div class="tablewrap">
+    <table>
+      <thead><tr><th>方案</th><th>适合谁</th><th>成本</th><th>操作量</th></tr></thead>
+      <tbody>
+        <tr><td><b>A · fal.ai</b><br><span style="color:var(--ink-soft);font-size:12.5px">Wan 2.2 LoRA 训练器</span></td><td>第一次训练、想快速验证</td><td>约 $3–8 / 次</td><td>传 zip → 填触发词 → 点运行</td></tr>
+        <tr><td><b>B · Replicate</b><br><span style="color:var(--ink-soft);font-size:12.5px">社区 Wan 训练器</span></td><td>已有 Replicate 账号</td><td>约 $3–10 / 次</td><td>同上，网页表单</td></tr>
+        <tr><td><b>C · RunPod + musubi-tuner</b><br><span style="color:var(--ink-soft);font-size:12.5px">A100 40GB 自训</span></td><td>要完全控制参数、反复迭代</td><td>约 $2–5 / 次</td><td>命令行，参数见下表</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="checklist">
+    <label class="check-item"><input type="checkbox" data-k="p3-1"><span class="check-box"><svg viewBox="0 0 16 16"><path d="M2.5 8.5l3.5 3.5 7-8"/></svg></span><span class="check-body"><span class="check-title">打包数据集</span><span class="check-desc">把 <code>wife_lora_dataset/</code>（图片 + 同名 .txt）打成 zip。</span></span></label>
+
+    <label class="check-item"><input type="checkbox" data-k="p3-2"><span class="check-box"><svg viewBox="0 0 16 16"><path d="M2.5 8.5l3.5 3.5 7-8"/></svg></span><span class="check-body"><span class="check-title">选对基座：I2V 还是 T2V</span><span class="check-desc">你的工作流是图生视频，就针对 <code>Wan 2.2 I2V A14B</code> 训；别训成 T2V 版，权重不通用。</span></span><span class="check-tag tag-key">关键</span></label>
+
+    <label class="check-item"><input type="checkbox" data-k="p3-3"><span class="check-box"><svg viewBox="0 0 16 16"><path d="M2.5 8.5l3.5 3.5 7-8"/></svg></span><span class="check-body"><span class="check-title">I2V A14B 先训 high-noise expert</span><span class="check-desc">A14B 是双专家 MoE 架构。先只训 high-noise 那只就能看到效果；追求极致再补训 low-noise。fal / Replicate 的训练器通常已处理好这一层。</span></span></label>
+
+    <label class="check-item"><input type="checkbox" data-k="p3-4"><span class="check-box"><svg viewBox="0 0 16 16"><path d="M2.5 8.5l3.5 3.5 7-8"/></svg></span><span class="check-body"><span class="check-title">确认训练参数（自训时按下表）</span><span class="check-desc">托管训练器一般只需填触发词和步数；方案 C 用下面的参考值。</span></span></label>
+  </div>
+
+  <div class="tablewrap">
+    <table>
+      <thead><tr><th>参数</th><th>参考值</th><th>说明</th></tr></thead>
+      <tbody>
+        <tr><td><code>network_dim / alpha</code></td><td>32 / 16</td><td>人像 LoRA 的甜区；faces 训不好再升到 64/32</td></tr>
+        <tr><td><code>learning_rate</code></td><td><code>2e-4</code></td><td>AdamW 8bit；过拟合就降到 1e-4</td></tr>
+        <tr><td><code>steps</code></td><td>2000–3000</td><td>40 张图 ≈ 每 50–75 step 一轮 epoch</td></tr>
+        <tr><td><code>save_every_n_steps</code></td><td>250</td><td>留多个 checkpoint，方便挑"最像但还没僵"的那个</td></tr>
+        <tr><td><code>resolution</code></td><td>1024</td><td>开启 aspect ratio bucketing</td></tr>
+        <tr><td><code>optimizer / scheduler</code></td><td>adamw_8bit / cosine</td><td>musubi-tuner 默认组合即可</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="checklist">
+    <label class="check-item"><input type="checkbox" data-k="p3-5"><span class="check-box"><svg viewBox="0 0 16 16"><path d="M2.5 8.5l3.5 3.5 7-8"/></svg></span><span class="check-body"><span class="check-title">下载 .safetensors 到本地</span><span class="check-desc">训练完成后把每个 checkpoint 都拉回来，文件名里带上步数，如 <code>taitai_jm_2500.safetensors</code>。</span></span></label>
+  </div>
+
+  <div class="note"><b>预期管理：</b>第一次训练像到七八分就是成功。剩下两三分靠阶段 05 的迭代，不是靠一次把参数拉满。</div>
+</section>
+
+<!-- ============ PHASE 4 ============ -->
+<section class="phase" id="p4">
+  <div class="phase-head">
+    <span class="phase-num">阶段 04</span>
+    <h2>本地加载与调试</h2>
+    <span class="phase-eta">预计 1 小时</span>
+  </div>
+  <p class="phase-intro">回到你的 Mac：LoRA 文件只有几百 MB，加载后推理速度和显存几乎不变。</p>
+
+  <div class="checklist">
+    <label class="check-item"><input type="checkbox" data-k="p4-1"><span class="check-box"><svg viewBox="0 0 16 16"><path d="M2.5 8.5l3.5 3.5 7-8"/></svg></span><span class="check-body"><span class="check-title">放入 loras 目录</span></span></label>
+  </div>
+  <div class="codeblock" id="cmd1">cp taitai_jm_2500.safetensors \
+  ~/Projects/AI-Tools/ComfyUI/models/loras/<button class="copy-btn" data-copy="cmd1">复制</button></div>
+
+  <div class="checklist">
+    <label class="check-item"><input type="checkbox" data-k="p4-2"><span class="check-box"><svg viewBox="0 0 16 16"><path d="M2.5 8.5l3.5 3.5 7-8"/></svg></span><span class="check-body"><span class="check-title">在 I2V 工作流里挂 LoRA</span><span class="check-desc">你的 Wan2.2 工作流用的是 GGUF 加载器，CLIP 不在同一路——用 <code>LoraLoaderModelOnly</code> 节点，串在 UnetLoader (GGUF) 之后，不要用以太 CLIP 的标准 LoraLoader。</span></span><span class="check-tag tag-key">关键</span></label>
+
+    <label class="check-item"><input type="checkbox" data-k="p4-3"><span class="check-box"><svg viewBox="0 0 16 16"><path d="M2.5 8.5l3.5 3.5 7-8"/></svg></span><span class="check-body"><span class="check-title">提示词句首加触发词</span><span class="check-desc">例如 <code>taitai_jm, a woman walking through a sunlit garden, turning to smile at the camera…</code>。首帧参考图照给，LoRA 和首帧是双保险，不冲突。</span></span></label>
+
+    <label class="check-item"><input type="checkbox" data-k="p4-4"><span class="check-box"><svg viewBox="0 0 16 16"><path d="M2.5 8.5l3.5 3.5 7-8"/></svg></span><span class="check-body"><span class="check-title">跑强度对照测试</span><span class="check-desc">同一首帧、同一 seed，强度分别跑 0.6 / 0.8 / 1.0 三条，记下最自然的档位。多数情况下 0.8 附近是甜区。</span></span><span class="check-tag tag-key">关键</span></label>
+
+    <label class="check-item"><input type="checkbox" data-k="p4-5"><span class="check-box"><svg viewBox="0 0 16 16"><path d="M2.5 8.5l3.5 3.5 7-8"/></svg></span><span class="check-body"><span class="check-title">对比多个 checkpoint</span><span class="check-desc">用最优强度，把 1500 / 2000 / 2500 / 3000 步的 checkpoint 各跑一条。最像的不一定是步数最多的——过拟合的反而僵。</span></span></label>
+  </div>
+
+  <div class="note good"><b>完成后：</b>把最优的「checkpoint + 强度 + 提示词模板」组合告诉我，我可以帮你固化成 comfyui-web(:8321) 里的预设，以后一键出片。</div>
+</section>
+
+<!-- ============ PHASE 5 ============ -->
+<section class="phase" id="p5">
+  <div class="phase-head">
+    <span class="phase-num">阶段 05</span>
+    <h2>诊断与迭代</h2>
+    <span class="phase-eta">按需</span>
+  </div>
+  <p class="phase-intro">效果不对时，先对照下表定位，再决定改哪里。重训一次只要几美元，<b>改数据永远比改参数值得</b>。</p>
+
+  <div class="tablewrap">
+    <table>
+      <thead><tr><th>症状</th><th>诊断</th><th>处方</th></tr></thead>
+      <tbody>
+        <tr><td>不像她，随机路人脸</td><td class="verdict-no">欠拟合</td><td>加 steps；确认触发词在 caption 句首；强度提到 0.9–1.0；检查照片数量和多样性</td></tr>
+        <tr><td>像，但僵硬、每张脸一模一样、构图死板</td><td class="verdict-no">过拟合</td><td>换更早的 checkpoint；强度降到 0.6–0.7；lr 降一半重训；照片集多样性不足则补照片</td></tr>
+        <tr><td>首帧像，动起来脸漂移</td><td class="verdict-no">视频阶段身份弱</td><td>LoRA 强度上调；首帧用 PuLID/InstantID 精修；缩短单条时长（5s 内更稳）</td></tr>
+        <tr><td>自带某种滤镜感/同一个背景</td><td class="verdict-no">数据集污染</td><td>照片集里滤镜或背景太单一，补多样照片后重训，参数不用动</td></tr>
+        <tr><td>转头、侧脸时崩坏</td><td class="verdict-no">角度覆盖不足</td><td>补 3/4 侧、正侧脸照片（阶段 01 第 5 项），重训</td></tr>
+        <tr><td>整体稳定，想要最后 10% 的还原度</td><td class="verdict-yes">接近上限</td><td>补训 low-noise expert；或 dim 升 64 重训；收益递减，量力而行</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="checklist">
+    <label class="check-item"><input type="checkbox" data-k="p5-1"><span class="check-box"><svg viewBox="0 0 16 16"><path d="M2.5 8.5l3.5 3.5 7-8"/></svg></span><span class="check-body"><span class="check-title">记录每轮实验</span><span class="check-desc">建个简单笔记：checkpoint 步数 × 强度 × seed × 主观打分。三轮之后你会清楚看到收敛方向。</span></span><span class="check-tag tag-opt">建议</span></label>
+
+    <label class="check-item"><input type="checkbox" data-k="p5-2"><span class="check-box"><svg viewBox="0 0 16 16"><path d="M2.5 8.5l3.5 3.5 7-8"/></svg></span><span class="check-body"><span class="check-title">定稿并归档</span><span class="check-desc">选定最终 checkpoint 后，把数据集 zip、caption、参数、最优组合存档一份——以后想升级 Wan 3.x 基座时直接复用。</span></span><span class="check-tag tag-opt">建议</span></label>
+  </div>
+</section>
+
+<footer>
+  <div>手册基于你本机环境（M4 Max 36GB · ComfyUI 0.32.0 · Wan2.2 GGUF 工作流）编写。训练完成后需要固化预设，随时叫我。</div>
+  <div class="foot-links">
+    <a href="https://github.com/kohya-ss/musubi-tuner">musubi-tuner</a>
+    <a href="https://fal.ai">fal.ai</a>
+    <a href="https://replicate.com">Replicate</a>
+    <a href="https://github.com/city96/ComfyUI-GGUF">ComfyUI-GGUF</a>
+  </div>
+</footer>
+
+</main>
+
+<script>
+(function(){
+  var KEY='wan22-lora-manual-v1';
+  var boxes=Array.prototype.slice.call(document.querySelectorAll('.check-item input[type=checkbox]'));
+  var fill=document.getElementById('progressFill');
+  var num=document.getElementById('progressNum');
+  var state={};
+  try{state=JSON.parse(localStorage.getItem(KEY)||'{}')}catch(e){state={}}
+
+  function save(){
+    try{localStorage.setItem(KEY,JSON.stringify(state))}catch(e){}
+  }
+  function render(){
+    var done=0;
+    boxes.forEach(function(b){
+      var k=b.getAttribute('data-k');
+      b.checked=!!state[k];
+      if(b.checked)done++;
+    });
+    var total=boxes.length;
+    var pct=total?Math.round(done/total*100):0;
+    fill.style.width=pct+'%';
+    num.textContent=done+' / '+total;
+  }
+  boxes.forEach(function(b){
+    b.addEventListener('change',function(){
+      state[b.getAttribute('data-k')]=b.checked;
+      save();render();
+    });
+  });
+  document.getElementById('resetBtn').addEventListener('click',function(){
+    if(!confirm('清空所有勾选进度？'))return;
+    state={};save();render();
+  });
+
+  document.querySelectorAll('.copy-btn').forEach(function(btn){
+    btn.addEventListener('click',function(){
+      var el=document.getElementById(btn.getAttribute('data-copy'));
+      if(!el)return;
+      var text=el.childNodes[0].textContent;
+      function ok(){btn.textContent='已复制';setTimeout(function(){btn.textContent='复制'},1500)}
+      if(navigator.clipboard&&navigator.clipboard.writeText){
+        navigator.clipboard.writeText(text).then(ok,function(){fallback()});
+      }else{fallback()}
+      function fallback(){
+        var ta=document.createElement('textarea');
+        ta.value=text;document.body.appendChild(ta);ta.select();
+        try{document.execCommand('copy');ok()}catch(e){}
+        document.body.removeChild(ta);
+      }
+    });
+  });
+
+  render();
+})();
+</script>
