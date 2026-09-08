@@ -1,3 +1,6 @@
 #!/bin/bash
+# LoRA 工作台: 后端 server.py (aiohttp) + 静态向导页, 绑 0.0.0.0:8331 (tailnet 可用)
 cd "$(dirname "$0")"
-exec /usr/bin/python3 -m http.server 8331 --bind 127.0.0.1
+PY="$HOME/Projects/AI-Tools/ComfyUI/.venv/bin/python"
+[ -x "$PY" ] || PY="python3"
+exec "$PY" server.py
